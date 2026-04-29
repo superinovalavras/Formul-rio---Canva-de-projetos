@@ -675,7 +675,7 @@
 
 <!-- MAIN -->
 <main class="main">
-  <form id="lvrsForm" action="https://formspree.io/f/xnjlkqze" method="POST" novalidate>
+  <form id="lvrsForm" action="https://hook.us2.make.com/ddsgui1vafleusncc3xey2tujv7y9es5" method="POST" novalidate>
 
     <!-- SEÇÃO 1: DADOS DA EMPRESA -->
     <div class="secao-sep">
@@ -1251,6 +1251,7 @@ document.querySelectorAll('input, select, textarea').forEach(el => {
 });
 
 document.getElementById('lvrsForm').addEventListener('submit', function(e) {
+  e.preventDefault();
   let valido = true;
 
   const obrig = [
@@ -1288,24 +1289,39 @@ document.getElementById('lvrsForm').addEventListener('submit', function(e) {
   });
 
   if (!valido) {
-    e.preventDefault();
-    e.stopImmediatePropagation();
     const primeiro = document.querySelector('.invalido');
     if (primeiro) primeiro.scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
 
-  // Tudo certo: barra cheia e Formspree envia + mostra overlay (data-fs-success)
+  // Envio para o webhook (Make.com / Zapier / etc.)
+  const btn = this.querySelector('button[type="submit"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
   document.getElementById('progressBar').style.width = '100%';
+
+  const dados = {};
+  new FormData(this).forEach((v, k) => {
+    dados[k] = dados[k] === undefined ? v : (Array.isArray(dados[k]) ? [...dados[k], v] : [dados[k], v]);
+  });
+
+  fetch(this.action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados)
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('successOverlay').classList.add('show');
+    this.reset();
+    document.getElementById('progressBar').style.width = '0%';
+  })
+  .catch(err => {
+    alert('Erro ao enviar o formulário. Tente novamente.\n\nDetalhe técnico: ' + err.message);
+  })
+  .finally(() => {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar Canvas →'; }
+  });
 });
 </script>
-
-<!-- Formspree SDK -->
-<script>
-  window.formspree = window.formspree || function () { (formspree.q = formspree.q || []).push(arguments); };
-  formspree('initForm', { formElement: '#lvrsForm', formId: 'xnjlkqze' });
-</script>
-<script src="https://unpkg.com/@formspree/ajax@1" defer></script>
-
 </body>
 </html>
